@@ -54,6 +54,25 @@ migrations/RLS, not a hosted Supabase Auth/Storage server.
   mode boundaries, separate bounded background execution, binary upload size and
   download confinement, and existing v1 behavior.
 
+## Observed local results (2026-10-18)
+
+- 145 focused Hosaka host/terminal tests passed.
+- 44 distinct extension tests passed across the host Python and isolated
+  PostgreSQL test environment: 36 ordinary/local/transport tests plus 8 real
+  PostgreSQL integration cases. The PostgreSQL command runs 11 tests because it
+  also repeats the 3 standalone SQLite cases.
+- PostgreSQL 17 exercised the actual migration/RPC/RLS functions, two-device
+  exchange, lost acknowledgments, remote SQL resolution, explicit conflicts,
+  tombstones, file interruption/recovery, cursor commit ordering and repeatable
+  deployment/default seeds.
+- Frontend type-check/build and package validation passed.
+- Browser smoke checks exercised first-launch SQLite initialization, offline
+  citation entry, the actual FileInput upload/attach/private download workflow,
+  and synchronization status with no credentials configured. Pending record/file
+  work remained visible while remote synchronization was disabled.
+
+These are local results, not hosted Supabase deployment evidence.
+
 ## Not verified without real Supabase credentials
 
 No real project URL, organizer login or deployment credentials were provided.
