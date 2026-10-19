@@ -1,0 +1,1 @@
+{"type":"object","properties":{"query":{"type":"string","maxLength":100}},"additionalProperties":false}

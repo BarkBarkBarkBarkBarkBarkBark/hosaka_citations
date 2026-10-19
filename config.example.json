@@ -1,0 +1,8 @@
+{
+  "database": "citations.sqlite3",
+  "sync_enabled": false,
+  "supabase_url": "https://YOUR-PROJECT.supabase.co",
+  "publishable_key": "YOUR-PUBLISHABLE-OR-ANON-KEY",
+  "workspace_id": "00000000-0000-4000-8000-000000000001",
+  "sync_interval_seconds": 60
+}

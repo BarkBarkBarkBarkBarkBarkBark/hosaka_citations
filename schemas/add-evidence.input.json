@@ -1,0 +1,9 @@
+{
+  "type":"object","required":["selection","upload_id"],"additionalProperties":false,
+  "properties":{
+    "selection":{"type":"string","maxLength":64},
+    "upload_id":{"type":"string","maxLength":32},
+    "filename":{"type":"string","maxLength":255},
+    "actor":{"type":"string","maxLength":100}
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "type":"object","required":["citation","expected_revision"],"additionalProperties":false,
+  "properties":{
+    "citation":{"type":"string","minLength":1,"maxLength":64},
+    "expected_revision":{"type":"integer","minimum":0,"maximum":2147483647},
+    "actor":{"type":"string","maxLength":100},
+    "notes":{"type":"string","maxLength":1000},
+    "override_reason":{"type":"string","maxLength":1000}
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "type":"object","required":["citation","expected_revision","reason"],"additionalProperties":false,
+  "properties":{
+    "citation":{"type":"string","minLength":1,"maxLength":64},
+    "expected_revision":{"type":"integer","minimum":0,"maximum":2147483647},
+    "reason":{"type":"string","minLength":1,"maxLength":1000},
+    "actor":{"type":"string","maxLength":100}
+  }
+}

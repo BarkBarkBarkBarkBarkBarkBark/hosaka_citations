@@ -1,0 +1,16 @@
+{
+  "type":"object","required":["selection","operation"],"additionalProperties":false,
+  "properties":{
+    "selection":{"type":"string","maxLength":64},
+    "operation":{"type":"string","maxLength":40,"enum":["Record remedy","View citation","Activity history","Resolve citation","Reopen citation","Void citation","Delete citation","Edit incident and deadline","Correct first offense","Add remedy","Edit remedy","Complete one remedy"]},
+    "notes":{"type":"string","maxLength":1000},
+    "actor":{"type":"string","maxLength":100},
+    "reason":{"type":"string","maxLength":1000},
+    "description":{"type":"string","maxLength":1000},
+    "remedy_match":{"type":"string","maxLength":500},
+    "resolution_duration_seconds":{"type":"integer","minimum":1,"maximum":31536000},
+    "resolve_after":{"type":"boolean"},
+    "required":{"type":"boolean"},
+    "first_offense":{"type":"boolean"}
+  }
+}

@@ -1,0 +1,434 @@
+version: 1
+view:
+  type: Navigation
+  pages:
+    - label: Issue citation
+      load:
+        action: initialize
+        params: {}
+      view:
+        type: Stack
+        children:
+          - type: Text
+            text: Type an attendee name and choose an existing match, or keep a new name to add them with this citation. Fictional party fun, not a legal notice.
+          - type: LookupInput
+            id: issue_attendee_name
+            selection_id: issue_person_id
+            label: Attendee name
+            action: search-persons
+            query_param: query
+            label_field: display_name
+            value_field: id
+            description_field: detail
+            max_length: 100
+          - type: TextInput
+            id: violation
+            label: Violation code (see App menu > Violation templates)
+            default: no-costume
+          - type: TextInput
+            id: description
+            label: Incident notes (optional)
+            default: ""
+          - type: TextInput
+            id: remedy
+            label: Remedy (blank uses the template)
+            default: ""
+          - type: NumberInput
+            id: duration
+            label: Time allowed (seconds)
+            default: 3600
+          - type: Details
+            label: More issue options
+            children:
+              - type: TextInput
+                id: actor
+                label: Organizer signature (optional)
+                default: ""
+              - type: TextInput
+                id: issued_at
+                label: Incident timestamp with offset (blank means now)
+                default: ""
+          - type: Button
+            label: Issue citation
+            action: issue-for-attendee
+            params:
+              display_name: params.issue_attendee_name
+              person_id: params.issue_person_id
+              violation: params.violation
+              actor: params.actor
+              issued_at: params.issued_at
+              description: params.description
+              remedy: params.remedy
+              resolution_duration_seconds: params.duration
+          - type: Error
+            bind: result.error
+          - type: Result
+            bind: result.message
+          - type: Result
+            bind: result.receipt
+    - label: Citation table
+      load:
+        action: search
+        params: {}
+      view:
+        type: Stack
+        children:
+          - type: TextInput
+            id: query
+            label: Find an attendee or violation
+            default: ""
+          - type: Select
+            id: search_status
+            label: Status
+            options: [all, open, resolved, void]
+            default: all
+          - type: Details
+            label: More filters
+            children:
+              - type: Select
+                id: offense
+                label: First or repeat offense
+                options: [all, first, repeat]
+                default: all
+              - type: Checkbox
+                id: overdue_only
+                label: Only overdue
+                default: false
+              - type: TextInput
+                id: issued_after
+                label: Issued after (timestamp with offset, optional)
+                default: ""
+              - type: TextInput
+                id: issued_before
+                label: Issued before (timestamp with offset, optional)
+                default: ""
+          - type: Button
+            label: Apply filters
+            action: search
+            params:
+              query: params.query
+              status: params.search_status
+              offense: params.offense
+              overdue_only: params.overdue_only
+              issued_after: params.issued_after
+              issued_before: params.issued_before
+          - type: Button
+            label: Show overdue
+            action: overdue
+            params: {}
+          - type: Error
+            bind: result.error
+          - type: Result
+            bind: result.message
+          - type: Table
+            bind: result.rows
+            columns: [issued_at, offender, violation, status, overdue, first_offense, due_at]
+    - label: Manage citation
+      view:
+        type: Stack
+        children:
+          - type: Text
+            text: Search by attendee name and choose an open citation. Record remedy completes all outstanding required remedies shown for that citation. After a change, select the citation again to refresh it.
+          - type: LookupInput
+            id: manage_name
+            selection_id: manage_selection
+            label: Find attendee
+            action: find-citations
+            query_param: query
+            label_field: display_name
+            value_field: selection
+            description_field: detail
+            max_length: 100
+            params:
+              status: params.manage_status
+          - type: Select
+            id: manage_operation
+            label: Action
+            options: [Record remedy, View citation, Activity history, Resolve citation, Reopen citation, Void citation, Delete citation, Edit incident and deadline, Correct first offense, Add remedy, Edit remedy, Complete one remedy]
+            default: Record remedy
+          - type: TextInput
+            id: notes
+            label: Remedy performed or resolution notes
+            default: ""
+          - type: Checkbox
+            id: resolve_after
+            label: Resolve citation after recording the remedy
+            default: true
+          - type: Details
+            label: More management options
+            children:
+              - type: Select
+                id: manage_status
+                label: Show citations
+                options: [open, all, resolved, void]
+                default: open
+              - type: TextInput
+                id: manage_actor
+                label: Organizer signature (optional)
+                default: ""
+              - type: TextInput
+                id: reason
+                label: Reason (required for reopen, void, correction or override)
+                default: ""
+              - type: TextInput
+                id: edit_description
+                label: New incident or remedy description (for edit or add actions)
+                default: ""
+              - type: NumberInput
+                id: edit_duration
+                label: Seconds allowed (for deadline edits)
+                default: 3600
+              - type: TextInput
+                id: remedy_match
+                label: Existing remedy description (only when choosing between multiple remedies)
+                default: ""
+              - type: Checkbox
+                id: remedy_required
+                label: New or edited remedy is required
+                default: true
+              - type: Checkbox
+                id: first_offense
+                label: Corrected first-offense snapshot
+                default: true
+          - type: Button
+            label: Apply selected action
+            action: manage-citation
+            params:
+              selection: params.manage_selection
+              operation: params.manage_operation
+              notes: params.notes
+              actor: params.manage_actor
+              reason: params.reason
+              description: params.edit_description
+              resolution_duration_seconds: params.edit_duration
+              remedy_match: params.remedy_match
+              resolve_after: params.resolve_after
+              required: params.remedy_required
+              first_offense: params.first_offense
+          - type: Error
+            bind: result.error
+          - type: Result
+            bind: result.message
+          - type: Result
+            bind: result.receipt
+          - type: Details
+            label: Activity history
+            children:
+              - type: Table
+                bind: result.rows
+                columns: [event_type, created_at, event_payload]
+          - type: Details
+            label: Private evidence
+            children:
+              - type: FileInput
+                id: evidence_upload
+                filename_id: evidence_filename
+                label: Evidence file (PNG, JPEG, WebP or PDF, up to 10 MiB)
+              - type: Button
+                label: Attach evidence to selected citation
+                action: add-evidence
+                params:
+                  selection: params.manage_selection
+                  upload_id: params.evidence_upload
+                  filename: params.evidence_filename
+                  actor: params.manage_actor
+              - type: Files
+                bind: result.files
+    - label: Attendees
+      view:
+        type: Stack
+        children:
+          - type: TextInput
+            id: attendee_name
+            label: Attendee name or name search
+            default: ""
+          - type: Details
+            label: Optional contact information
+            children:
+              - type: TextInput
+                id: email
+                label: Email (optional)
+                default: ""
+              - type: TextInput
+                id: phone
+                label: Phone (optional E.164)
+                default: ""
+          - type: Button
+            label: Create attendee
+            action: create-person
+            params:
+              display_name: params.attendee_name
+              email: params.email
+              phone: params.phone
+          - type: Button
+            label: Find attendees
+            action: search-persons
+            params:
+              query: params.attendee_name
+          - type: Error
+            bind: result.error
+          - type: Result
+            bind: result.message
+          - type: Table
+            bind: result.rows
+            columns: [display_name, email, phone]
+    - label: Violation templates
+      view:
+        type: Stack
+        children:
+          - type: Button
+            label: List templates
+            action: list-violations
+            params: {}
+          - type: Details
+            label: Create a custom template
+            children:
+              - type: TextInput
+                id: custom_code
+                label: Unique lowercase kebab-case code
+                default: ""
+              - type: TextInput
+                id: custom_title
+                label: Violation title
+                default: ""
+              - type: TextInput
+                id: custom_description
+                label: Description
+                default: ""
+              - type: TextInput
+                id: custom_remedy
+                label: Default remedy
+                default: ""
+              - type: NumberInput
+                id: custom_duration
+                label: Default resolution seconds
+                default: 3600
+              - type: NumberInput
+                id: severity
+                label: Severity (1-5)
+                default: 1
+              - type: Button
+                label: Create violation template
+                action: create-violation
+                params:
+                  code: params.custom_code
+                  title: params.custom_title
+                  description: params.custom_description
+                  default_remedy: params.custom_remedy
+                  default_resolution_seconds: params.custom_duration
+                  severity: params.severity
+          - type: Error
+            bind: result.error
+          - type: Result
+            bind: result.message
+          - type: Table
+            bind: result.rows
+            columns: [code, title, default_remedy, default_resolution_seconds, severity]
+    - label: Dashboard
+      view:
+        type: Stack
+        children:
+          - type: Button
+            label: Refresh dashboard
+            action: dashboard
+            params: {}
+          - type: Error
+            bind: result.error
+          - type: Result
+            bind: result.message
+          - type: Table
+            bind: result.rows
+            columns: [name, value]
+    - label: Synchronization
+      load:
+        action: sync-status
+        params: {}
+      view:
+        type: Stack
+        children:
+          - type: Text
+            text: SQLite always works offline. Configure Supabase and sign in through the extension CLI to enable optional two-way sync. No database or service-role credentials belong in this view.
+          - type: Button
+            label: Synchronize now
+            action: sync-now
+            params: {}
+          - type: Button
+            label: Refresh sync status
+            action: sync-status
+            params: {}
+          - type: Error
+            bind: result.error
+          - type: Result
+            bind: result.message
+          - type: Result
+            bind: result.record
+          - type: Details
+            label: Review synchronization conflicts
+            children:
+              - type: Button
+                label: Show both conflict versions
+                action: sync-conflicts
+                params: {}
+              - type: Table
+                bind: result.rows
+                columns: [label, detail, local_payload, remote_payload]
+              - type: LookupInput
+                id: conflict_name
+                selection_id: selected_conflict
+                label: Find a conflict by person or record
+                action: sync-conflicts
+                query_param: query
+                label_field: label
+                value_field: id
+                description_field: detail
+                max_length: 200
+              - type: Select
+                id: conflict_choice
+                label: Reviewed version to keep (both versions remain archived)
+                options: [remote, local]
+                default: remote
+              - type: Button
+                label: Apply conflict choice
+                action: sync-resolve
+                params:
+                  conflict_id: params.selected_conflict
+                  choice: params.conflict_choice
+    - label: Settings and backup
+      view:
+        type: Stack
+        children:
+          - type: TextInput
+            id: party_timezone
+            label: Party timezone (e.g. America/Los_Angeles)
+            default: UTC
+          - type: NumberInput
+            id: due_soon_seconds
+            label: Due-soon window in seconds
+            default: 900
+          - type: Button
+            label: Read saved settings
+            action: party-settings
+            params: {}
+          - type: Button
+            label: Save settings
+            action: party-settings
+            params:
+              party_timezone: params.party_timezone
+              due_soon_seconds: params.due_soon_seconds
+          - type: Error
+            bind: result.error
+          - type: Result
+            bind: result.message
+          - type: Result
+            bind: result.record
+          - type: Details
+            label: Private JSON backup
+            children:
+              - type: Text
+                text: PRIVATE. Includes optional contacts and organizer history. Use the extension CLI backup command for a complete SQLite and evidence backup. JSON export is for record inspection, not authentication or synchronization state.
+              - type: Button
+                label: Export private backup
+                action: export
+                params: {}
+              - type: Result
+                bind: result.export_json

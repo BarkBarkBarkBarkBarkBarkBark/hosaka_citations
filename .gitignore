@@ -1,0 +1,12 @@
+__pycache__
+__pycache__/
+.venv/
+.pytest_cache/
+*.sqlite3*
+*.db
+.env*
+*-auth.json
+citations-config.json
+database-location.json
+.pgpass
+.pg_service.conf

@@ -1,0 +1,13 @@
+{
+  "type":"object","required":["display_name","violation"],"additionalProperties":false,
+  "properties":{
+    "display_name":{"type":"string","minLength":1,"maxLength":100},
+    "person_id":{"type":"string","maxLength":36},
+    "violation":{"type":"string","minLength":1,"maxLength":64},
+    "issued_at":{"type":"string","maxLength":40},
+    "actor":{"type":"string","maxLength":100},
+    "description":{"type":"string","maxLength":1000},
+    "remedy":{"type":"string","maxLength":500},
+    "resolution_duration_seconds":{"type":"integer","minimum":1,"maximum":31536000}
+  }
+}

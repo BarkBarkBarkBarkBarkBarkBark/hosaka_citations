@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["success", "message", "error"],
+  "properties": {
+    "success": {"type": "boolean"},
+    "message": {"type": "string"},
+    "error": {"type": ["string", "null"]},
+    "record": {"type": "object"},
+    "rows": {"type": "array", "items": {"type": "object"}},
+    "receipt": {"type": "string"},
+    "export_json": {"type": "string"}
+    ,"files": {"type":"array","items":{"type":"object","required":["name","label"],"properties":{"name":{"type":"string"},"label":{"type":"string"}},"additionalProperties":false}}
+  },
+  "additionalProperties": false
+}

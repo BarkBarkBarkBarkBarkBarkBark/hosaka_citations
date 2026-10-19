@@ -1,0 +1,7 @@
+{
+  "type":"object","required":["query"],"additionalProperties":false,
+  "properties":{
+    "query":{"type":"string","maxLength":100},
+    "status":{"type":"string","maxLength":8,"enum":["open","all","resolved","void"]}
+  }
+}

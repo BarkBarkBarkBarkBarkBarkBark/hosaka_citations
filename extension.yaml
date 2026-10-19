@@ -1,0 +1,147 @@
+schema_version: 1
+id: halloween-citations
+name: Halloween Citations
+version: 0.3.0
+description: Offline SQLite citations with durable optional Supabase replication and private evidence.
+requires:
+  hosaka_api: 1
+type: view
+category: productivity
+entrypoint:
+  file: main.py
+  callable: run
+ui:
+  mode: declarative
+  file: ui.yaml
+permissions:
+  network: true
+  filesystem: data-directory
+  subprocess: false
+menu:
+  label: Halloween Citations
+  icon: file
+  order: 200
+actions:
+  initialize:
+    description: Initialize and migrate the local SQLite repository on app launch.
+    input_schema: schemas/initialize.input.json
+    output_schema: schemas/result.output.json
+  sync-now:
+    description: Push pending records and pull durable remote changes without replacing SQLite.
+    input_schema: schemas/sync-now.input.json
+    output_schema: schemas/result.output.json
+  sync-status:
+    description: Show durable queue, conflict, file-transfer and synchronization status.
+    input_schema: schemas/sync-status.input.json
+    output_schema: schemas/result.output.json
+  sync-conflicts:
+    description: Review preserved local and remote conflict versions.
+    input_schema: schemas/sync-conflicts.input.json
+    output_schema: schemas/result.output.json
+  sync-resolve:
+    description: Explicitly choose a reviewed local or remote version.
+    input_schema: schemas/sync-resolve.input.json
+    output_schema: schemas/result.output.json
+  background-tick:
+    description: Evaluate the extension-owned persisted synchronization interval.
+    input_schema: schemas/background-tick.input.json
+    output_schema: schemas/result.output.json
+  add-evidence:
+    description: Validate and attach a staged private evidence file to the selected citation.
+    input_schema: schemas/add-evidence.input.json
+    output_schema: schemas/result.output.json
+  dashboard:
+    description: Show persisted counts and action-time deadline alerts.
+    input_schema: schemas/dashboard.input.json
+    output_schema: schemas/result.output.json
+  create-person:
+    description: Create an attendee with optional contact details.
+    input_schema: schemas/create-person.input.json
+    output_schema: schemas/result.output.json
+  search-persons:
+    description: Find attendees by name; select their UUID when issuing.
+    input_schema: schemas/search-persons.input.json
+    output_schema: schemas/result.output.json
+  create-violation:
+    description: Add a custom violation template.
+    input_schema: schemas/create-violation.input.json
+    output_schema: schemas/result.output.json
+  list-violations:
+    description: List eight initial templates and custom violations.
+    input_schema: schemas/list-violations.input.json
+    output_schema: schemas/result.output.json
+  issue:
+    description: Issue a fictional citation and snapshot first-offense status.
+    input_schema: schemas/issue.input.json
+    output_schema: schemas/result.output.json
+  issue-for-attendee:
+    description: Issue for a selected attendee, reuse an unambiguous exact name, or create a new attendee atomically.
+    input_schema: schemas/issue-for-attendee.input.json
+    output_schema: schemas/result.output.json
+  search:
+    description: Filter citations by attendee, violation, number, status, offense and date.
+    input_schema: schemas/search.input.json
+    output_schema: schemas/result.output.json
+  find-citations:
+    description: Find human-labeled citations by attendee name, open by default, with opaque revision-bearing selections.
+    input_schema: schemas/find-citations.input.json
+    output_schema: schemas/result.output.json
+  manage-citation:
+    description: Apply a remedy or management operation to a selected citation without human-entered identifiers.
+    input_schema: schemas/manage-citation.input.json
+    output_schema: schemas/result.output.json
+  get:
+    description: Retrieve a citation by exact number or UUID and generate a text receipt.
+    input_schema: schemas/get.input.json
+    output_schema: schemas/result.output.json
+  edit:
+    description: Edit open citation narrative, duration or a reasoned first-offense correction.
+    input_schema: schemas/edit.input.json
+    output_schema: schemas/result.output.json
+  add-remedy:
+    description: Add another required or optional remedy.
+    input_schema: schemas/add-remedy.input.json
+    output_schema: schemas/result.output.json
+  edit-remedy:
+    description: Edit an incomplete remedy on an open citation.
+    input_schema: schemas/edit-remedy.input.json
+    output_schema: schemas/result.output.json
+  complete-remedy:
+    description: Complete a remedy with actor and notes.
+    input_schema: schemas/complete-remedy.input.json
+    output_schema: schemas/result.output.json
+  resolve:
+    description: Resolve after required remedies, or with an explicit override reason.
+    input_schema: schemas/resolve.input.json
+    output_schema: schemas/result.output.json
+  reopen:
+    description: Reopen a resolved citation without erasing history.
+    input_schema: schemas/reopen.input.json
+    output_schema: schemas/result.output.json
+  void:
+    description: Void a citation while preserving its history.
+    input_schema: schemas/void.input.json
+    output_schema: schemas/result.output.json
+  overdue:
+    description: Compute overdue open citations from persisted UTC deadlines.
+    input_schema: schemas/overdue.input.json
+    output_schema: schemas/result.output.json
+  history:
+    description: Retrieve organizer-only citation activity.
+    input_schema: schemas/history.input.json
+    output_schema: schemas/result.output.json
+  party-settings:
+    description: Read or set IANA party timezone and due-soon threshold.
+    input_schema: schemas/party-settings.input.json
+    output_schema: schemas/result.output.json
+  export:
+    description: Return a complete private JSON backup without writing outside the context.
+    input_schema: schemas/export.input.json
+    output_schema: schemas/result.output.json
+limits:
+  timeout_seconds: 30
+  max_output_bytes: 1048576
+  max_file_bytes: 536870912
+background:
+  action: background-tick
+  interval_seconds: 15

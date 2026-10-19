@@ -1,0 +1,1 @@
+{"type":"object","required":["citation"],"properties":{"citation":{"type":"string","minLength":1,"maxLength":64}},"additionalProperties":false}

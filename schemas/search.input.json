@@ -1,0 +1,11 @@
+{
+  "type":"object","additionalProperties":false,
+  "properties":{
+    "query":{"type":"string","maxLength":200},
+    "status":{"type":"string","maxLength":8,"enum":["all","open","resolved","void"]},
+    "offense":{"type":"string","maxLength":6,"enum":["all","first","repeat"]},
+    "overdue_only":{"type":"boolean"},
+    "issued_after":{"type":"string","maxLength":40},
+    "issued_before":{"type":"string","maxLength":40}
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "type":"object","required":["display_name"],"additionalProperties":false,
+  "properties":{
+    "display_name":{"type":"string","minLength":1,"maxLength":100},
+    "email":{"type":"string","maxLength":254},
+    "phone":{"type":"string","maxLength":16}
+  }
+}

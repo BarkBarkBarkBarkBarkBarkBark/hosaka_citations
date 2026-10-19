@@ -1,0 +1,7 @@
+{
+  "type":"object","additionalProperties":false,
+  "properties":{
+    "party_timezone":{"type":"string","minLength":1,"maxLength":100},
+    "due_soon_seconds":{"type":"integer","minimum":1,"maximum":604800}
+  }
+}

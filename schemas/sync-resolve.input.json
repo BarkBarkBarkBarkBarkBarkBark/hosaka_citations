@@ -1,0 +1,4 @@
+{
+  "type":"object","required":["conflict_id","choice"],"additionalProperties":false,
+  "properties":{"conflict_id":{"type":"string","maxLength":36},"choice":{"type":"string","maxLength":6,"enum":["local","remote"]}}
+}
