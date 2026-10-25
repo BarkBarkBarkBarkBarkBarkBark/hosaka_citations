@@ -41,6 +41,8 @@ class TransportTests(unittest.TestCase):
                 self.assertEqual(json.loads(request.data)["refresh_token"], "private-refresh")
                 return io.BytesIO(json.dumps({"access_token": access, "refresh_token": "rotated-private", "expires_in": 3600}).encode())
             self.assertEqual(request.get_header("Authorization"), "Bearer " + access)
+            self.assertEqual(request.get_header("Content-profile"), "hosaka_citations")
+            self.assertEqual(request.get_header("Accept-profile"), "hosaka_citations")
             return io.BytesIO(b'{"changes":[],"cursor":0,"has_more":false}')
         with patch("urllib.request.urlopen", side_effect=open_url):
             client = Supabase(self.context, self.config)

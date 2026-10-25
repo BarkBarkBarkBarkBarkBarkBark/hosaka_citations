@@ -109,7 +109,8 @@ class PostgreSQLTests(unittest.TestCase):
         cls.admin = psycopg.connect(os.environ["CITATIONS_TEST_PG"], autocommit=True)
         cls.name = "hc_test_" + uuid4().hex
         cls.admin.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(cls.name)))
-        cls.dsn = psycopg.conninfo.make_conninfo(os.environ["CITATIONS_TEST_PG"], dbname=cls.name)
+        cls.dsn = psycopg.conninfo.make_conninfo(os.environ["CITATIONS_TEST_PG"], dbname=cls.name,
+                                                 options="-c search_path=hosaka_citations,public")
         cls.connection = psycopg.connect(cls.dsn, autocommit=True)
         cls.connection.execute("""
           DO $$ BEGIN
@@ -127,6 +128,7 @@ class PostgreSQLTests(unittest.TestCase):
           GRANT USAGE ON SCHEMA auth,storage,public TO authenticated,anon;
           GRANT SELECT,INSERT ON storage.objects TO authenticated;
         """)
+        cls.connection.execute((ROOT / "citations/migrations/postgres_bootstrap.sql").read_text())
         for migration in sorted((ROOT / "citations/migrations/postgres").glob("*.sql")):
             cls.connection.execute(migration.read_text())
 
@@ -162,7 +164,7 @@ class PostgreSQLTests(unittest.TestCase):
 
             def push(self, operation):
                 from psycopg.types.json import Jsonb
-                result = self.rpc("SELECT public.hc_push(%s,%s,%s,%s,%s,%s)", (
+                result = self.rpc("SELECT hosaka_citations.hc_push(%s,%s,%s,%s,%s,%s)", (
                     workspace or test.workspace, operation["operation_id"], operation["entity_type"],
                     operation["entity_id"], operation["base_revision"], Jsonb(json.loads(operation["payload"])),
                 ))
@@ -172,7 +174,7 @@ class PostgreSQLTests(unittest.TestCase):
                 return result
 
             def pull(self, cursor, limit=100):
-                return self.rpc("SELECT public.hc_pull(%s,%s,%s)", (workspace or test.workspace, cursor, limit))
+                return self.rpc("SELECT hosaka_citations.hc_pull(%s,%s,%s)", (workspace or test.workspace, cursor, limit))
 
             def upload(self, attachment, content):
                 key = (workspace or test.workspace, attachment["storage_key"])
@@ -322,6 +324,24 @@ class PostgreSQLTests(unittest.TestCase):
             self.client().push(altered)
         database.close()
 
+    def test_application_is_isolated_in_its_own_schema_and_owner_role(self):
+        self.connection.execute("CREATE TABLE IF NOT EXISTS public.other_application(id int)")
+        owners = self.connection.execute(
+            "SELECT DISTINCT pg_get_userbyid(relowner) FROM pg_class WHERE relnamespace='hosaka_citations'::regnamespace"
+        ).fetchall()
+        self.assertEqual(owners, [("hosaka_citations_owner",)])
+        definers = self.connection.execute(
+            "SELECT DISTINCT pg_get_userbyid(proowner) FROM pg_proc WHERE pronamespace='hosaka_citations'::regnamespace AND proname<>'hc_uid'"
+        ).fetchall()
+        self.assertEqual(definers, [("hosaka_citations_owner",)])
+        self.assertFalse(self.connection.execute(
+            "SELECT has_table_privilege('hosaka_citations_owner','public.other_application','SELECT,INSERT,UPDATE,DELETE')"
+        ).fetchone()[0])
+        self.assertFalse(self.connection.execute("SELECT has_schema_privilege('hosaka_citations_owner','auth','USAGE')").fetchone()[0])
+        self.assertEqual(self.connection.execute(
+            "SELECT count(*) FROM pg_class WHERE relnamespace='public'::regnamespace AND relname LIKE 'hc\\_%'"
+        ).fetchone()[0], 0)
+
     def test_direct_remote_resolution_is_logged_and_downloads_do_not_create_outbox_loops(self):
         context = self.device()
         citation = self.action(context, "issue-for-attendee", display_name="Remote SQL", violation="no-costume")["record"]
@@ -384,7 +404,6 @@ class PostgreSQLTests(unittest.TestCase):
     def test_remote_setup_and_optional_seed_repeat_without_overwriting_customizations(self):
         from unittest.mock import patch
         from citations.cli import remote_migrate, psql
-        self.connection.execute("CREATE TABLE IF NOT EXISTS hc_schema_migrations(version integer PRIMARY KEY)")
         self.connection.execute("INSERT INTO hc_schema_migrations VALUES(1),(2),(3) ON CONFLICT DO NOTHING")
         environment = {
             "PGHOST": self.connection.info.host, "PGPORT": str(self.connection.info.port),

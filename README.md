@@ -246,12 +246,27 @@ python3 -m citations.cli remote-migrate \
 
 `remote-migrate` uses the deployment connection, creates/records migrations,
 adds membership for the real Auth user and notifies PostgREST to reload its schema.
+It first runs `citations/migrations/postgres_bootstrap.sql`, which creates the
+`hosaka_citations` schema and its NOLOGIN owner role `hosaka_citations_owner`.
+All tables and SECURITY DEFINER functions belong to that role, so they cannot
+read or write other applications' tables in the same Supabase project. The
+deployment connection (normally `postgres`) is granted membership in the owner
+role and keeps ownership only of the Storage bucket/policies. No separate
+PostgreSQL database is used: Supabase Auth, PostgREST and Storage serve only the
+project's `postgres` database.
+
+Expose the schema once in the project's API settings (**Data API -> Exposed
+schemas**: add `hosaka_citations`, keeping existing entries such as `public`).
+The client selects it with `Content-Profile`/`Accept-Profile` headers on each
+RPC request.
 It can be rerun; existing workspace names, records and memberships are preserved.
 Each migration is transactional. If setup stops after a migration, rerun rather
 than dropping tables. Deployment failure is explicit and identifies the migration.
 
 Files, in order:
 
+0. `citations/migrations/postgres_bootstrap.sql`: idempotent schema, owner role
+   and minimal Auth grants; rerun safely before every migration pass.
 1. `citations/migrations/postgres/001_domain.sql`: workspace-scoped normalized
    domain tables, foreign keys, membership and RLS.
 2. `002_replication.sql`: server revisions, immutable history, idempotent operation
@@ -267,9 +282,9 @@ The application advisory writer lock intentionally serializes remote writers.
 Useful deployment checks:
 
 ```sql
-SELECT version FROM public.hc_schema_migrations ORDER BY version;
-SELECT id, name FROM public.hc_workspaces;
-SELECT workspace_id, user_id FROM public.hc_members;
+SELECT version FROM hosaka_citations.hc_schema_migrations ORDER BY version;
+SELECT id, name FROM hosaka_citations.hc_workspaces;
+SELECT workspace_id, user_id FROM hosaka_citations.hc_members;
 SELECT id, public, file_size_limit, allowed_mime_types
 FROM storage.buckets WHERE id = 'halloween-citations-evidence';
 ```
@@ -373,7 +388,7 @@ GitHub issue comment or transcript to demonstrate the test.
 | Host rejects manifest/capabilities | Install/verify the generic host upgrade; do not bypass context paths or permissions |
 | 401 / expired session | Check project/publishable key and sign in again; do not use a service-role key |
 | 403 | Check actual Auth user UUID, workspace membership and policies |
-| RPC not found / schema error | Confirm all migration versions and request PostgREST schema reload |
+| RPC not found / schema error | Confirm all migration versions, that `hosaka_citations` is an exposed API schema, and request PostgREST schema reload |
 | Storage failure | Keep pending work; check private bucket, MIME/size limits, token and workspace prefix |
 | TLS failure | Fix trusted CA/hostname/connect settings, never disable verification |
 | Source changed / missing grant | Ask the owner to inspect/reapprove; no API may grant trust |

@@ -9,6 +9,10 @@ import urllib.request
 from citations.config import validate_remote_config
 
 
+# Exposed to PostgREST alongside other applications' schemas; selected per request.
+SCHEMA = "hosaka_citations"
+
+
 class SyncError(RuntimeError):
     pass
 
@@ -30,6 +34,8 @@ class Supabase:
 
     def request(self, path: str, payload=None, *, method="POST", binary: bytes | None = None, mime="application/json", authenticated=True):
         headers = {"apikey": self.config["publishable_key"], "Content-Type": mime}
+        if path.startswith("/rest/v1/"):
+            headers["Content-Profile"] = headers["Accept-Profile"] = SCHEMA
         if authenticated:
             self.ensure_auth()
             headers["Authorization"] = "Bearer " + self.auth["access_token"]
