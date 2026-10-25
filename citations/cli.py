@@ -94,18 +94,25 @@ def psql(sql: str, variables: dict | None = None, *, atomic=True) -> str:
 
 def remote_migrate(workspace: str, member: str, name: str):
     workspace, member = str(UUID(workspace)), str(UUID(member))
-    psql("CREATE TABLE IF NOT EXISTS public.hc_schema_migrations(version integer PRIMARY KEY);")
-    applied = {int(line) for line in psql("SELECT version FROM public.hc_schema_migrations ORDER BY version;").splitlines() if line}
-    for migration in sorted((Path(__file__).parent / "migrations/postgres").glob("*.sql")):
+    migrations = Path(__file__).parent / "migrations"
+    try:
+        psql((migrations / "postgres_bootstrap.sql").read_text(encoding="utf-8"))
+    except DomainError as exc:
+        raise DomainError(f"Schema/role bootstrap: {exc}") from exc
+    applied = {int(line) for line in psql("SELECT version FROM hosaka_citations.hc_schema_migrations ORDER BY version;").splitlines() if line}
+    for migration in sorted((migrations / "postgres").glob("*.sql")):
         version = int(migration.name.split("_")[0])
         if version not in applied:
             try:
-                psql(migration.read_text(encoding="utf-8") + f"\nINSERT INTO public.hc_schema_migrations VALUES({version});")
+                psql(migration.read_text(encoding="utf-8") + f"\nINSERT INTO hosaka_citations.hc_schema_migrations VALUES({version});")
             except DomainError as exc:
                 raise DomainError(f"Migration {migration.name}: {exc}") from exc
+    # Membership has no foreign key into Supabase Auth (the owner role cannot reference it).
+    if psql("SELECT count(*) FROM auth.users WHERE id=:'member'::uuid;", {"member": member}) != "1":
+        raise DomainError("The member must be an existing Supabase Auth user UUID.")
     psql(
-        "INSERT INTO public.hc_workspaces VALUES(:'workspace'::uuid,:'name') ON CONFLICT DO NOTHING;\n"
-        "INSERT INTO public.hc_members VALUES(:'workspace'::uuid,:'member'::uuid) ON CONFLICT DO NOTHING;",
+        "INSERT INTO hosaka_citations.hc_workspaces VALUES(:'workspace'::uuid,:'name') ON CONFLICT DO NOTHING;\n"
+        "INSERT INTO hosaka_citations.hc_members VALUES(:'workspace'::uuid,:'member'::uuid) ON CONFLICT DO NOTHING;",
         {"workspace": workspace, "member": member, "name": name},
     )
     psql("NOTIFY pgrst, 'reload schema';")

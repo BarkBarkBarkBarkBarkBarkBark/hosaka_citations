@@ -93,7 +93,10 @@ provided. Do not add broad existing policies to this bucket.
 
 The remote migration CLI uses `psql`, with `PGSERVICE`/private deployment settings.
 It creates membership only for an existing Supabase Auth user. It records applied
-migration versions and requests PostgREST schema reload. Client code uses the
+migration versions and requests PostgREST schema reload. Remote objects live in
+the `hosaka_citations` schema, owned by the NOLOGIN `hosaka_citations_owner` role
+created by `migrations/postgres_bootstrap.sql`; the schema must be listed in the
+project's exposed API schemas and is selected by profile headers. Client code uses the
 publishable/anon key plus user JWT, not PostgreSQL credentials or service-role
 keys. User tokens rotate through GoTrue refresh and stay in a private data file.
 TLS uses certificate verification; there is no insecure production switch.

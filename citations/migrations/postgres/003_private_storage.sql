@@ -7,12 +7,15 @@ DO $$ BEGIN
   RAISE EXCEPTION 'The evidence bucket must be private; review its configuration before proceeding';
  END IF;
 END $$;
-CREATE FUNCTION public.hc_storage_workspace(path text) RETURNS uuid
+-- Storage policies stay with the deploying role, which owns Supabase's storage tables.
+SET ROLE hosaka_citations_owner;
+CREATE FUNCTION hosaka_citations.hc_storage_workspace(path text) RETURNS uuid
 LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
  SELECT CASE WHEN split_part(path,'/',1) ~ '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
  THEN split_part(path,'/',1)::uuid ELSE NULL END
 $$;
+RESET ROLE;
 CREATE POLICY hc_evidence_read ON storage.objects FOR SELECT TO authenticated
-USING(bucket_id='halloween-citations-evidence' AND public.hc_is_member(public.hc_storage_workspace(name)));
+USING(bucket_id='halloween-citations-evidence' AND hosaka_citations.hc_is_member(hosaka_citations.hc_storage_workspace(name)));
 CREATE POLICY hc_evidence_insert ON storage.objects FOR INSERT TO authenticated
-WITH CHECK(bucket_id='halloween-citations-evidence' AND public.hc_is_member(public.hc_storage_workspace(name)));
+WITH CHECK(bucket_id='halloween-citations-evidence' AND hosaka_citations.hc_is_member(hosaka_citations.hc_storage_workspace(name)));

@@ -30,6 +30,8 @@ generic managed-directory, optional network/background and binary capabilities
   Add numbered migrations, never populated/template databases. Default seeds
   preserve customizations. Demo data is explicit opt-in.
 - Old JSON is left untouched, not silently migrated; the owner allowed starting fresh.
+- Remote objects live in schema hosaka_citations, owned by hosaka_citations_owner,
+  to stay isolated from other apps sharing the Supabase project. Never use public.
 - Client credentials are publishable key + user session only. No service-role or
   PostgreSQL deployment credentials in clients, logs, action params or source.
 - Hosted checks without credentials must remain explicitly unverified.
