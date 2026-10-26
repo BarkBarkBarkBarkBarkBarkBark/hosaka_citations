@@ -497,12 +497,27 @@ class CitationTests(unittest.TestCase):
 
     def test_invalid_first_citation_does_not_leave_orphan_attendees(self):
         result = main.run("issue-for-attendee", {
-            "display_name": "Unsaved Ghost", "violation": "missing-template",
+            "display_name": "Unsaved Ghost", "violation": "no-costume", "issued_at": "2999-01-01T00:00:00Z",
         }, Context(self.root, True))
         self.assertFalse(result["success"])
         self.assertFalse((self.root / STATE_FILE).exists())
         self.assertEqual(len(Repository(self.context).state["persons"]), 0)
         self.assertEqual(Repository(self.context).state["citations"], [])
+
+    def test_new_violation_phrase_creates_one_template_and_reuses_it(self):
+        first = self.call("issue-for-attendee", display_name="Sock Ghost", violation="Socks with sandals")["record"]
+        templates = [row for row in Repository(self.context).state["violation_types"] if row["title"] == "Socks with sandals"]
+        self.assertEqual(len(templates), 1)
+        self.assertEqual(templates[0]["code"], "socks-with-sandals")
+        self.assertEqual(templates[0]["severity"], 1)
+        self.assertEqual(first["violation_type_id"], templates[0]["id"])
+        second = self.call("issue-for-attendee", display_name="Sock Ghost", violation="socks with sandals")["record"]
+        self.assertEqual(second["violation_type_id"], first["violation_type_id"])
+        again = [row for row in Repository(self.context).state["violation_types"] if row["title"].casefold() == "socks with sandals"]
+        self.assertEqual(len(again), 1)
+        coded = self.call("issue-for-attendee", display_name="Sock Ghost", violation="no-costume")["record"]
+        self.assertNotEqual(coded["violation_type_id"], first["violation_type_id"])
+        self.assertEqual(self.call("get", citation=coded["id"])["record"]["violation"], "Attending without a costume")
 
     def test_find_citations_uses_names_open_default_human_details_and_newest_first(self):
         person = self.person()

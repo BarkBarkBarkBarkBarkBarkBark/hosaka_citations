@@ -92,11 +92,38 @@ class Service:
         return {"message": "Eight spooky defaults; custom templates are welcome.",
                 "rows": [row.copy() for row in self.state["violation_types"] if row["active"]]}
 
+    def violation_code(self, title: str) -> str:
+        """Kebab code for a new template. A taken code, including an inactive one, gets a numeric suffix."""
+        slug = re.sub(r"[^a-z0-9]+", "-", title.casefold()).strip("-")[:64].strip("-")
+        if not slug or not slug[0].isalpha():
+            slug = f"v-{slug}".strip("-")
+        slug = slug[:64].strip("-")
+        if not re.fullmatch(r"[a-z][a-z0-9-]{0,63}", slug):
+            raise DomainError("Violation needs a letter so a template code can be made from it.")
+        taken = {row["code"] for row in self.state["violation_types"]}
+        if slug not in taken:
+            return slug
+        for number in range(2, 1000):
+            suffix = f"-{number}"
+            candidate = f"{slug[:64 - len(suffix)].strip('-')}{suffix}"
+            if candidate not in taken and re.fullmatch(r"[a-z][a-z0-9-]{0,63}", candidate):
+                return candidate
+        raise DomainError("Could not make a unique violation code from that title.")
+
     def violation(self, value: str) -> dict:
+        text = value.strip()
+        if not text:
+            raise DomainError("Violation is required.")
+        if len(text) > 120:
+            raise DomainError("Violation title must be 120 characters or fewer.")
+        folded = text.casefold()
         for row in self.state["violation_types"]:
-            if value in (row["id"], row["code"]) and row["active"]:
+            if row["active"] and (text in (row["id"], row["code"]) or folded == row["code"].casefold()):
                 return row
-        raise DomainError("Unknown or inactive violation. List templates to find its code.")
+        for row in self.state["violation_types"]:
+            if row["active"] and row["title"].casefold() == folded:
+                return row
+        return self.create_violation({"code": self.violation_code(text), "title": text, "severity": 1})["record"]
 
     def issue(self, params: dict) -> dict:
         person = self.repo.find("persons", params["person_id"])
