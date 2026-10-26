@@ -137,7 +137,7 @@ class Synchronizer:
                 self.retry("file_transfers", attachment["id"], row["attempts"], error)
                 self.db.set_meta("sync_error", error)
 
-    def exchange(self, *, force=True, budget=8) -> dict:
+    def exchange(self, *, force=True, budget=25) -> dict:
         if not self.config["sync_enabled"]:
             return self.status()
         now = utcnow()

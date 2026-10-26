@@ -18,7 +18,7 @@ class SyncError(RuntimeError):
 
 
 class Supabase:
-    def __init__(self, context, config: dict, timeout: float = 2):
+    def __init__(self, context, config: dict, timeout: float = 20):
         context.require_network()
         if not all(config[key] for key in ("supabase_url", "publishable_key", "workspace_id")):
             raise SyncError("Configure the Supabase HTTPS origin, publishable key and workspace before syncing.")

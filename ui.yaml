@@ -23,7 +23,7 @@ view:
             max_length: 100
           - type: TextInput
             id: violation
-            label: Violation code (see App menu > Violation templates)
+            label: Violation (existing title or code, or a new phrase that becomes the template)
             default: no-costume
           - type: TextInput
             id: description
