@@ -285,8 +285,7 @@ class CitationTests(unittest.TestCase):
         result = self.call("get", citation=citation["id"])
         self.assertNotIn(person["email"], json.dumps(result))
         self.assertNotIn(person["phone"], json.dumps(result))
-        self.assertIn("OFFICIAL HALLOWEEN VIOLATION NOTICE", result["receipt"])
-        self.assertIn("Fictional party fun", result["receipt"])
+        self.assertIn("VIOLATION NOTICE", result["receipt"])
         backup = self.call("export")["export_json"]
         self.assertIn(person["email"], backup)
         self.assertEqual(json.loads(backup), Repository(self.context).state)

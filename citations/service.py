@@ -331,8 +331,8 @@ class Service:
         due = display_time(citation["due_at"], zone) if citation["due_at"] else "No deadline"
         violation = self.repo.find("violation_types", citation["violation_type_id"])
         lines = [
-            "OFFICIAL HALLOWEEN VIOLATION NOTICE",
-            "Fictional party fun only. Not a legal notice.",
+            "VIOLATION NOTICE",
+            "NOT A JOKE. VERY SERIOUS.",
             f"Citation: {citation['citation_number']}", f"Offender: {summary['offender']}",
             f"Violation: {summary['violation']}", f"Severity: {violation['severity']}/5",
             f"Issued: {display_time(citation['issued_at'], zone)} ({zone.key})",
