@@ -26,17 +26,38 @@ class Database:
     def __init__(self, context):
         self.context = context
         self.config = load_config(context, validate_remote=False)
-        path = Path(context.data_path(self.config["database"]))
-        location = context.read_data("database-location.json")
-        if location is not None:
-            try:
-                saved_location = json.loads(location)
-            except ValueError as exc:
-                raise DomainError("Invalid database-location.json; repair or restore the locator.") from exc
-            if saved_location != self.config["database"]:
-                raise DomainError("Database path changed. Move a verified backup explicitly; do not silently start a new database.")
         with open(context.data_path("migration.lock"), "a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
+            location = context.read_data("database-location.json")
+            saved_location = None
+            if location is not None:
+                try:
+                    saved_location = json.loads(location)
+                except ValueError as exc:
+                    raise DomainError("Invalid database-location.json; repair or restore the locator.") from exc
+            legacy_file = Path(context.data_path("citations.sqlite3"))
+            canonical_file = Path(context.data_path("citations.db"))
+            if (self.config["database"] == "citations.sqlite3" or saved_location == "citations.sqlite3") and (
+                legacy_file.exists() or not canonical_file.exists()
+            ):
+                if legacy_file.exists() and not canonical_file.exists():
+                    with sqlite3.connect(legacy_file) as legacy_conn:
+                        legacy_conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                    os.replace(legacy_file, canonical_file)
+                    for suffix in ("-wal", "-shm"):
+                        Path(str(legacy_file) + suffix).unlink(missing_ok=True)
+                self.config["database"] = "citations.db"
+                saved_location = "citations.db"
+                context.write_data("database-location.json", json.dumps("citations.db"))
+                raw_cfg = context.read_data("citations-config.json")
+                if raw_cfg is not None:
+                    cfg_obj = json.loads(raw_cfg)
+                    if cfg_obj.get("database") == "citations.sqlite3":
+                        cfg_obj["database"] = "citations.db"
+                        context.write_data("citations-config.json", encoded(cfg_obj))
+            if saved_location is not None and saved_location != self.config["database"]:
+                raise DomainError("Database path changed. Move a verified backup explicitly; do not silently start a new database.")
+            path = Path(context.data_path(self.config["database"]))
             old_mask = os.umask(0o077)
             try:
                 self.connection = sqlite3.connect(path, timeout=5, isolation_level=None)
@@ -68,7 +89,8 @@ class Database:
                     seed_defaults(self)
                     self.set_meta("initialized", "1")
                     self.set_meta("generation", "0")
-            context.write_data("database-location.json", json.dumps(self.config["database"]))
+            if location is None:
+                context.write_data("database-location.json", json.dumps(self.config["database"]))
 
     @contextmanager
     def transaction(self):

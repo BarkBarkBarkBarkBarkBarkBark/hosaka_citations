@@ -13,7 +13,7 @@ class DomainError(ValueError):
 
 
 ACTIONS = (
-    "dashboard", "create-person", "search-persons", "create-violation",
+    "dashboard", "list-citations", "create-person", "search-persons", "create-violation",
     "list-violations", "issue", "issue-for-attendee", "search", "get", "edit", "add-remedy",
     "edit-remedy", "complete-remedy", "resolve", "reopen", "void", "overdue",
     "history", "party-settings", "export", "find-citations", "manage-citation",
@@ -62,7 +62,7 @@ def validate(value: Any, schema: dict, path: str = "params") -> None:
 def validate_action(action: str, params: dict) -> None:
     if action not in ACTIONS:
         raise DomainError("Unknown citation action.")
-    schema = json.loads((Path(__file__).resolve().parents[1] / "schemas" / f"{action}.input.json").read_text(encoding="utf-8"))
+    schema = json.loads((Path(__file__).resolve().parent / "schemas" / f"{action}.input.json").read_text(encoding="utf-8"))
     validate(params, schema)
     if len(json.dumps(params, ensure_ascii=False, allow_nan=False).encode()) > 16384:
         raise DomainError("Action parameters exceed 16 KiB.")

@@ -10,7 +10,7 @@ import unittest
 from uuid import uuid4
 import sys
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[1] / "extension"
 sys.path.insert(0, str(ROOT))
 import main
 from citations.cli import OperatorContext, backup
@@ -61,7 +61,7 @@ class SQLiteTests(unittest.TestCase):
     def test_more_than_64k_and_migration_seed_update_preservation(self):
         for index in range(80):
             self.action("issue-for-attendee", display_name=f"Guest {index}", violation="no-costume", description="x" * 900)
-        path = Path(self.context.data_path("citations.sqlite3"))
+        path = Path(self.context.data_path("citations.db"))
         self.assertGreater(path.stat().st_size, 65536)
         first = Repository(self.context)
         first.state["violation_types"][0]["title"] = "Organizer's custom title"
@@ -71,7 +71,7 @@ class SQLiteTests(unittest.TestCase):
         second = Repository(self.context)
         self.assertEqual(len(second.state["citations"]), 80)
         self.assertEqual(second.state["violation_types"][0]["title"], "Organizer's custom title")
-        self.assertEqual(second.database.connection.execute("SELECT count(*) FROM schema_migrations").fetchone()[0], 1)
+        self.assertEqual(second.database.connection.execute("SELECT count(*) FROM schema_migrations").fetchone()[0], 2)
         self.assertEqual(len(second.state["violation_types"]), 8)
         second.close()
 

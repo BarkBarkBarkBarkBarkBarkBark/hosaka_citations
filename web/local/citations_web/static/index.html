@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hosaka Citations</title>
+  <link rel="stylesheet" href="static/app.css">
+  <script src="static/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to citations</a>
+  <header><a href="/">Hosaka apps</a><h1>Citations</h1></header>
+  <nav aria-label="Citation views">
+    <button type="button" data-tab="list" aria-pressed="true">List</button>
+    <button type="button" data-tab="issue" aria-pressed="false">Issue</button>
+    <button type="button" data-tab="status" aria-pressed="false">Status</button>
+  </nav>
+  <p id="message" role="status"></p>
+  <main id="main">
+    <section id="list">
+      <form id="filters">
+        <label for="query">Search citations</label><input id="query" name="query" type="search" maxlength="200" autocomplete="off">
+        <label for="status-filter">Status</label>
+        <select id="status-filter" name="status"><option value="all">All</option><option value="open">Open</option><option value="resolved">Resolved</option><option value="void">Void</option></select>
+        <button>Search</button>
+      </form>
+      <p id="count"></p><div id="rows"></div>
+      <div class="actions"><button id="previous" type="button">Previous</button><button id="next" type="button">Next</button></div>
+    </section>
+    <section id="issue" hidden>
+      <h2>Issue a citation</h2>
+      <form id="issue-form">
+        <label for="name">Attendee name</label><input id="name" name="display_name" maxlength="100" required autocomplete="off">
+        <label for="violation">Violation</label><input id="violation" name="violation" maxlength="120" required list="violations" autocomplete="off"><datalist id="violations"></datalist>
+        <label for="incident">Incident</label><textarea id="incident" name="description" maxlength="1000"></textarea>
+        <label for="remedy">Required remedy (blank uses template)</label><input id="remedy" name="remedy" maxlength="500">
+        <label for="actor">Issued by</label><input id="actor" name="actor" maxlength="100" autocomplete="name">
+        <button>Review and issue</button>
+      </form>
+    </section>
+    <section id="status" hidden>
+      <h2>Synchronization &amp; summary</h2>
+      <p>Changes save locally. Saving is not proof of synchronization.</p>
+      <div id="dashboard-stats" class="stats"></div>
+      <div id="conflicts"></div>
+      <button id="sync-now" type="button">Synchronize now</button>
+      <pre id="sync-status"></pre>
+    </section>
+    <section id="detail" hidden>
+      <button id="detail-close" type="button">Back to list</button>
+      <h2 id="detail-title" tabindex="-1"></h2>
+      <p id="detail-text"></p>
+      <ul id="remedies"></ul>
+      <div id="detail-actions" class="actions"></div>
+      <pre id="receipt"></pre>
+      <details id="history-panel">
+        <summary>Activity history</summary>
+        <ul id="history-list"></ul>
+      </details>
+    </section>
+  </main>
+</body>
+</html>

@@ -2,7 +2,8 @@
 
 ## Local model and migration rules
 
-`citations/migrations/sqlite/` owns SQLite DDL; `migrations/postgres/` owns its
+`extension/citations/migrations/sqlite/` owns SQLite DDL;
+`extension/citations/migrations/postgres/` owns its
 PostgreSQL counterpart. Both persist persons, violation templates, citations,
 remedies, append-only citation events and attachment metadata, with foreign
 keys, UUID identities, unique display numbers/codes, status/boolean constraints,

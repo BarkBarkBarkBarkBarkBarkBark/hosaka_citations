@@ -1,0 +1,28 @@
+:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #08090d; color: #eee; }
+* { box-sizing: border-box; }
+body { max-width: 64rem; padding: 1rem; margin: auto; padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+a { color: #cdb5f5; }
+header, nav, .actions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+header { justify-content: space-between; }
+nav { position: sticky; top: 0; background: #08090d; padding: .5rem 0; z-index: 1; }
+nav button[aria-pressed="true"] { border-color: #b0f3db; }
+button, input, select, textarea { font: inherit; padding: .75rem; min-height: 44px; border: 1px solid #6d637a; border-radius: .4rem; }
+button { cursor: pointer; color: #eee; background: #30243d; touch-action: manipulation; }
+button:disabled { opacity: .5; cursor: default; }
+input, select, textarea { width: 100%; color: #eee; background: #11141c; min-width: 0; }
+form { display: grid; gap: .6rem; margin-bottom: 1.5rem; }
+.citation { display: block; width: 100%; text-align: left; margin: .75rem 0; overflow-wrap: anywhere; }
+.citation strong { display: block; font-size: 1.1rem; }
+.citation span { display: block; color: #dcd6f7; margin-top: .2rem; font-weight: 600; }
+.citation-comment, .citation-resolution { margin: .3rem 0 0; font-size: .92rem; color: #e2deea; }
+.citation-resolution { color: #b0f3db; }
+.citation small { display: block; color: #a79ab8; margin-top: .35rem; font-size: .82rem; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: .6rem; margin: 1rem 0; }
+.stat-card, .conflict-card { padding: .75rem; border: 1px solid #6d637a; border-radius: .4rem; background: #11141c; }
+#history-panel { margin-top: 1rem; border-top: 1px solid #30243d; padding-top: .75rem; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+#detail-actions button { flex: 1 1 10rem; }
+:focus-visible { outline: 3px solid #b0f3db; outline-offset: 3px; }
+.skip:not(:focus) { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+[hidden] { display: none !important; }
+@media (min-width: 48rem) { #filters { grid-template-columns: 2fr 1fr auto; align-items: end; } #filters label { grid-row: 1; } #query, #status-filter, #filters button { grid-row: 2; } }

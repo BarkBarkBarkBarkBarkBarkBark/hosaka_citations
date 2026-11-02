@@ -18,7 +18,7 @@ from citations.models import initial_state
 from citations.supabase import Supabase, SyncError
 from citations.validation import DomainError
 
-EXTENSION_ID = "halloween-citations"
+EXTENSION_ID = "citations"
 
 
 class OperatorContext:
@@ -168,7 +168,7 @@ def main():
     remote = commands.add_parser("remote-migrate")
     remote.add_argument("--workspace", required=True)
     remote.add_argument("--member", required=True, help="Existing Supabase Auth user UUID")
-    remote.add_argument("--name", default="Halloween")
+    remote.add_argument("--name", default="Citations")
     seed_remote = commands.add_parser("remote-seed")
     seed_remote.add_argument("--workspace", required=True)
     save = commands.add_parser("backup")

@@ -8,7 +8,7 @@ from uuid import UUID
 from citations.validation import DomainError
 
 DEFAULTS = {
-    "database": "citations.sqlite3", "sync_enabled": False, "supabase_url": "",
+    "database": "citations.db", "sync_enabled": False, "supabase_url": "",
     "publishable_key": "", "workspace_id": "", "sync_interval_seconds": 60,
 }
 

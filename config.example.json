@@ -1,5 +1,5 @@
 {
-  "database": "citations.sqlite3",
+  "database": "citations.db",
   "sync_enabled": false,
   "supabase_url": "https://YOUR-PROJECT.supabase.co",
   "publishable_key": "YOUR-PUBLISHABLE-OR-ANON-KEY",

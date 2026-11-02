@@ -1,0 +1,11 @@
+.venv/
+.web-venv/
+__pycache__/
+.pytest_cache/
+extension/
+web/
+tests/
+scripts/
+docs/
+*.sqlite3*
+*.db*

@@ -1,7 +1,14 @@
 __pycache__
 __pycache__/
 .venv/
+.web-venv/
+*.egg-info/
+build/
+dist/
 .pytest_cache/
+.vercel/
+.next/
+node_modules/
 *.sqlite3*
 *.db
 .env*

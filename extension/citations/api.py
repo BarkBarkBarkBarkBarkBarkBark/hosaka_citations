@@ -1,4 +1,4 @@
-"""Hosaka API v1 entrypoint; no host internals or direct data filesystem access."""
+"""Citation action API; no host internals or direct data filesystem access."""
 from __future__ import annotations
 
 from citations.repository import Context, Repository
@@ -12,6 +12,12 @@ def run(action: str, params: dict, context: Context) -> dict:
     database = None
     try:
         validate_action(action, params)
+        if action == "list-citations":
+            from citations.database import Database
+            from citations.queries import list_citations
+
+            database = Database(context)
+            return {"success": True, "error": None, **list_citations(database, params)}
         if action in {"sync-now", "sync-status", "sync-conflicts", "sync-resolve", "background-tick"}:
             from citations.database import Database
             from citations.sync import Synchronizer
@@ -44,7 +50,11 @@ def run(action: str, params: dict, context: Context) -> dict:
                         rows.append(item)
                 return {"success": True, "message": "Both local and remote conflict versions are preserved.", "error": None, "rows": rows}
             return {"success": True, "message": "Offline-first synchronization status.", "error": None, "record": sync.status()}
-        repository = Repository(context)
+        scoped = {
+            "get", "edit", "add-remedy", "edit-remedy", "complete-remedy",
+            "resolve", "reopen", "void", "history",
+        }
+        repository = Repository(context, citation=params["citation"] if action in scoped else None)
         if action == "add-evidence":
             from citations.evidence import attach
             result = attach(Service(repository), params)

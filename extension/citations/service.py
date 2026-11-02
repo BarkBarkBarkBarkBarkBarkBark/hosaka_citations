@@ -193,11 +193,21 @@ class Service:
     def is_overdue(self, citation: dict) -> bool:
         return citation["status"] == "open" and citation["due_at"] is not None and timestamp(citation["due_at"]) < self.now
 
+    def display_code(self, citation: dict) -> str:
+        rank = self.repo.database.connection.execute(
+            "SELECT count(*) FROM citations WHERE deleted_at IS NULL AND (issued_at < ? OR (issued_at = ? AND id <= ?))",
+            (citation["issued_at"], citation["issued_at"], citation["id"]),
+        ).fetchone()[0]
+        return f"#{max(1, rank)}"
+
     def summary(self, citation: dict) -> dict:
         return {
-            **citation, "offender": self.repo.find("persons", citation["person_id"])["display_name"],
+            **citation,
+            "display_code": self.display_code(citation),
+            "offender": self.repo.find("persons", citation["person_id"])["display_name"],
             "violation": self.repo.find("violation_types", citation["violation_type_id"])["title"],
             "overdue": self.is_overdue(citation),
+            "remedies": [row.copy() for row in self.remedies(citation)],
         }
 
     def search(self, params: dict) -> dict:
@@ -224,6 +234,11 @@ class Service:
             rows.append(row)
         rows.sort(key=lambda row: (row["issued_at"], row["id"]), reverse=True)
         return {"message": f"{len(rows)} citations. Overdue is derived at action time.", "rows": rows}
+
+    def list_citations(self, params: dict) -> dict:
+        from citations.queries import list_citations
+
+        return list_citations(self.repo.database, params, self.now)
 
     def overdue(self, params: dict) -> dict:
         return self.search({"overdue_only": True})
@@ -333,14 +348,22 @@ class Service:
         lines = [
             "VIOLATION NOTICE",
             "NOT A JOKE. VERY SERIOUS.",
-            f"Citation: {citation['citation_number']}", f"Offender: {summary['offender']}",
+            f"Citation: {summary['display_code']} ({citation['citation_number']})", f"Offender: {summary['offender']}",
             f"Violation: {summary['violation']}", f"Severity: {violation['severity']}/5",
             f"Issued: {display_time(citation['issued_at'], zone)} ({zone.key})",
             f"First-time offense: {'Yes' if citation['first_offense'] else 'No'}",
             f"Incident: {citation['description']}", f"Deadline: {due}",
             f"Status: {citation['status']}{' (OVERDUE)' if summary['overdue'] else ''}",
+            *(
+                [f"Resolved: {display_time(citation['resolved_at'], zone)}{' by ' + citation['resolved_by'] if citation.get('resolved_by') else ''}{' — ' + citation['resolution_notes'] if citation.get('resolution_notes') else ''}"]
+                if citation.get("resolved_at") else []
+            ),
             "Required remedies:",
-            *[f"[{'x' if row['completed'] else ' '}] {row['description']} ({'required' if row['required'] else 'optional'})" for row in remedies],
+            *[
+                f"[{'x' if row['completed'] else ' '}] {row['description']} ({'required' if row['required'] else 'optional'})"
+                + (f" — {row['completion_notes']}" if row.get("completion_notes") else "")
+                for row in remedies
+            ],
             f"Organizer signature: {citation['issued_by'] or '(unsigned)'}",
             f"Private evidence: {sum(row['citation_id'] == citation['id'] and row['deleted_at'] is None for row in self.state['attachments'])} file(s).",
         ]

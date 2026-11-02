@@ -33,13 +33,31 @@ def check_state(state: dict) -> None:
 
 
 class Repository:
-    def __init__(self, context: Context):
+    def __init__(self, context: Context, *, citation: str | None = None):
         self.context = context
         self.database = Database(context)
         connection = self.database.connection
         connection.execute("BEGIN")
         try:
-            self.state = {name: self.database.rows(name) for name in TABLES}
+            if citation is None:
+                self.state = {name: self.database.rows(name) for name in TABLES}
+            else:
+                selected = connection.execute(
+                    "SELECT * FROM citations WHERE id=? OR citation_number=?", (citation, citation),
+                ).fetchone()
+                if selected is None:
+                    raise DomainError("Citation not found.")
+                row = self.database.decode(dict(selected))
+                self.state = {
+                    "citations": [row],
+                    "persons": [self.database.row("persons", row["person_id"])],
+                    "violation_types": [self.database.row("violation_types", row["violation_type_id"])],
+                    **{table: [
+                        self.database.decode(dict(item)) for item in connection.execute(
+                            f"SELECT * FROM {table} WHERE citation_id=? ORDER BY rowid", (row["id"],),
+                        )
+                    ] for table in ("remedies", "citation_events", "attachments")},
+                }
             self.state.update(schema_version=2, settings=json.loads(self.database.meta("party_settings")))
             self.generation = self.database.generation()
             self.versions = {row["entity_id"]: row["version"] for row in connection.execute(
@@ -51,6 +69,7 @@ class Repository:
             self.database.close()
             raise
         self.original = copy.deepcopy(self.state)
+        self.indexes = {table: {row["id"]: row for row in self.state[table]} for table in TABLES}
         self.dirty = False
 
     def version(self, identifier: str) -> int:
@@ -60,8 +79,11 @@ class Repository:
         self.dirty = True
 
     def find(self, collection: str, identifier: str) -> dict:
+        if identifier in self.indexes[collection]:
+            return self.indexes[collection][identifier]
         for row in self.state[collection]:
             if row["id"] == identifier:
+                self.indexes[collection][identifier] = row
                 return row
         raise DomainError(f"No matching {collection} record.")
 

@@ -1,4 +1,4 @@
-# Hosaka Halloween Citations (`hosaka_citations`) - 0.3.0
+# Hosaka Citations (`hosaka_citations`) - 0.4.0
 
 Offline-first party citations. **SQLite is always the immediate write target.**
 Optional Supabase sync pushes individual records and pulls remote changes; it
@@ -11,31 +11,41 @@ Fictional party fun only, not a legal notice.
 
 ## Install locally
 
+The repository is now split into `extension/` (stdlib domain/runtime contract),
+`web/local/` (mobile local UI) and `apps/hosted-wall/` (independent Next.js/Vercel
+reader). Existing databases and remote workspace identities do not change.
+
+Use the sibling `hosaka-gateway` native installer for `cite`, `citations-setup`
+and the local web dependencies. Its README covers explicit web approval,
+private configuration, TLS/LAN access and keeping the legacy VirgoZone replica
+separate. Alternatively, `python3 -m pip install -e '.[web]'` installs this
+package into your selected environment; it does not install or trust Hosaka.
+
 Keep this repository outside Hosaka core. Install the generic host upgrade
 tracked in Hosaka issue 35, build its frontend, and restart its backend.
 Old text-only hosts reject the new capabilities instead of silently bypassing
 them. Runtime Python uses only the standard library.
 
 ```sh
-hosaka extensions link /absolute/path/to/halloween-citations
-hosaka extensions validate halloween-citations
+hosaka extensions link /absolute/path/to/hosaka_citations/extension
+hosaka extensions validate citations
 # Inspect source first. This is trusted-local execution, NOT an OS sandbox.
-hosaka extensions trust halloween-citations --trusted-local \
+hosaka extensions trust citations --trusted-local \
   --allow-storage --allow-managed-data
-hosaka extensions enable halloween-citations
-hosaka extensions run halloween-citations dashboard --params '{}'
+hosaka extensions enable citations
+hosaka extensions run citations dashboard --params '{}'
 ```
 
 First launch creates and migrates SQLite, then safely seeds missing default
 violation/remedy templates. No sample or populated database ships with source.
 No internet, account, API key or deployment credential is required locally.
 
-Data comes from `hosaka paths --json` -> `paths.extension_data` plus the existing
-ID **`halloween-citations`**. Default contents:
+Data comes from `hosaka paths --json` -> `paths.extension_data` plus the
+ID **`citations`** (migrated automatically from `halloween-citations` by `install.sh`). Default contents:
 
 ```text
-extension-data/halloween-citations/
-  citations.sqlite3           # plus SQLite WAL/SHM while open
+extension-data/citations/
+  citations.db                # plus SQLite WAL/SHM while open
   citations-config.json       # optional, private, never overwritten on update
   database-location.json      # guards against accidental path switching
   supabase-auth.json          # optional private user tokens
@@ -80,9 +90,9 @@ evidence, settings, history and outbox survive subsequent restarts/code updates.
    updated source, retaining the storage grants:
 
    ```sh
-   hosaka extensions trust halloween-citations --trusted-local \
+   hosaka extensions trust citations --trusted-local \
      --allow-storage --allow-managed-data --allow-network --allow-background
-   hosaka extensions run halloween-citations sync-now --params '{}'
+   hosaka extensions run citations sync-now --params '{}'
    ```
 
 While the native Hosaka backend runs, the granted background action honors the
@@ -122,6 +132,8 @@ Configuration edits preserve unspecified existing fields.
 
 See [protocol and deployment details](docs/SYNCHRONIZATION.md) and
 [actual verification and remaining hosted checks](docs/TESTING.md).
+[Gateway performance results](docs/PERFORMANCE.md) distinguish direct actions,
+full HTTP/CLI measurements and unverified Pi/macOS/hosted checks.
 
 ## Complete deployment handoff for a new coding agent
 
@@ -137,14 +149,16 @@ agent deployed anything merely because configuration or SQL files exist.
   [BarkBarkBarkBarkBarkBarkBark/Hosaka#35](https://github.com/BarkBarkBarkBarkBarkBarkBark/Hosaka/issues/35);
   application persistence/sync in
   [BarkBarkBarkBarkBarkBarkBark/hosaka_citations#1](https://github.com/BarkBarkBarkBarkBarkBarkBark/hosaka_citations/issues/1).
-- This handoff describes the **local 0.3 working tree**. Do not assume all files
+- This handoff now describes the **local 0.4 packaged working tree**. Gateway
+  work is tracked in Hosaka #37 and citations #5. Do not assume all files
   have been committed/pushed or that a remote checkout contains the host upgrade.
   Check `git status`, the manifest version and host CLI capabilities. Do not
   commit, publish, approve, enable, restart or change credentials without the
   operator's applicable authorization.
 - Keep application SQL, migrations, seeds, sync/auth code and docs here. Do not
   embed this application in Hosaka core, its installer, provider settings or
-  upstream PicoClaw. A separate service host is not needed for this implementation.
+  upstream PicoClaw. Native actions remain in the guarded host worker; optional
+  local web pages use a separately approved gateway runtime.
 - Run as the owning unprivileged operator. Use the same `HOSAKA_DATA_DIR` and
   execution environment as the backend. Docker paths are inside the container;
   do not guess their corresponding host path.
@@ -165,6 +179,8 @@ obtain storage from `paths.extension_data/halloween-citations`. On a fresh
 installation, link an inspected independent checkout, do not clone over an
 existing package or data directory. In commands below, `CITATIONS_SOURCE` means
 that independent source directory. Execute Python commands from it:
+It is the repository's `extension/` directory, not the repository root.
+Package-relative SQL paths below have the source prefix `extension/`.
 
 ```sh
 cd "$CITATIONS_SOURCE"

@@ -10,7 +10,7 @@ from urllib.error import HTTPError
 from uuid import uuid4
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "extension"))
 from citations.cli import OperatorContext
 from citations.config import load_config
 from citations.supabase import Supabase, SyncError

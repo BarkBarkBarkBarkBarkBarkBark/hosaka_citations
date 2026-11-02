@@ -14,7 +14,7 @@ from pathlib import Path
 from unittest.mock import patch
 from uuid import UUID
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[1] / "extension"
 sys.path.insert(0, str(ROOT))
 
 import main
@@ -303,7 +303,7 @@ class CitationTests(unittest.TestCase):
         self.assertEqual(self.context.read_data(STATE_FILE), "unmodified legacy backup")
         with tempfile.TemporaryDirectory() as directory:
             context = Context(Path(directory), True)
-            path = Path(context.data_path("citations.sqlite3"))
+            path = Path(context.data_path("citations.db"))
             path.write_bytes(b"not a database")
             result = main.run("dashboard", {}, context)
             self.assertFalse(result["success"])
@@ -350,7 +350,7 @@ class CitationTests(unittest.TestCase):
             ("resolve", {"citation": "x", "expected_revision": -1}),
             ("dashboard", {"extra": True}),
         ):
-            schema = json.loads((ROOT / "schemas" / f"{action}.input.json").read_text())
+            schema = json.loads((ROOT / "citations/schemas" / f"{action}.input.json").read_text())
             self.assertFalse(Draft202012Validator(schema).is_valid(params))
             with self.assertRaises(DomainError):
                 validate_action(action, params)
@@ -360,7 +360,7 @@ class CitationTests(unittest.TestCase):
 
     def test_package_contract_all_actions_success_failure_and_ui_bindings(self):
         package = validate_package(ROOT)
-        self.assertEqual(package.manifest.id, "halloween-citations")
+        self.assertEqual(package.manifest.id, "citations")
         self.assertEqual(set(package.manifest.actions), set(ACTIONS))
         self.assertTrue(package.manifest.permissions.network)
         self.assertEqual(package.manifest.permissions.filesystem, "data-directory")
@@ -368,7 +368,7 @@ class CitationTests(unittest.TestCase):
         citation = self.issue(person)
         remedy = citation["remedies"][0]["id"]
         samples = {
-            "initialize": {}, "dashboard": {}, "create-person": {"display_name": "Witch Hazel"},
+            "initialize": {}, "dashboard": {}, "list-citations": {}, "create-person": {"display_name": "Witch Hazel"},
             "search-persons": {}, "create-violation": {"code": "test-boo", "title": "Boo"},
             "list-violations": {}, "issue": {"person_id": person["id"], "violation": "bad-pun"},
             "issue-for-attendee": {"display_name": "Fresh Ghost", "violation": "no-costume"},
@@ -406,7 +406,7 @@ class CitationTests(unittest.TestCase):
             with self.subTest(action=action):
                 spec = package.manifest.actions[action]
                 Draft202012Validator(json.loads((ROOT / spec.input_schema).read_text())).validate(params)
-                with patch("main.Service", side_effect=lambda repository: Service(repository, lambda: NOW)):
+                with patch("citations.api.Service", side_effect=lambda repository: Service(repository, lambda: NOW)):
                     output = main.run(action, params, Context(self.root, True))
                 self.assertTrue(output["success"], output)
                 validator = Draft202012Validator(json.loads((ROOT / spec.output_schema).read_text()))
@@ -467,7 +467,7 @@ class CitationTests(unittest.TestCase):
         self.assertEqual(next(node for node in manage_nodes if node["type"] == "LookupInput")["action"], "find-citations")
         self.assertFalse(any(node.get("id") in {"citation", "expected_revision", "remedy_id"} for node in manage_nodes))
         operations = next(node["options"] for node in manage_nodes if node.get("id") == "manage_operation")
-        self.assertEqual(operations, json.loads((ROOT / "schemas/manage-citation.input.json").read_text())["properties"]["operation"]["enum"])
+        self.assertEqual(operations, json.loads((ROOT / "citations/schemas/manage-citation.input.json").read_text())["properties"]["operation"]["enum"])
 
     def test_first_citation_creates_attendee_and_later_exact_name_reuses_them(self):
         first = self.call("issue-for-attendee", display_name="  New Ghost  ", violation="no-costume")["record"]
@@ -633,24 +633,24 @@ class HostIntegrationTests(unittest.TestCase):
             with patch.dict(os.environ, {"HOSAKA_DATA_DIR": directory}):
                 manager = Manager()
                 manager.link(ROOT)
-                info = manager.info("halloween-citations")
+                info = manager.info("citations")
                 self.assertFalse(info["enabled"])
                 self.assertEqual(info["grants"], [])
                 self.assertIsNone(info["approved_digest"])
-                self.assertFalse(run(manager, "halloween-citations", "dashboard", {})["ok"])
-                manager.trust("halloween-citations", allow_storage=True, allow_managed_data=True)
-                manager.enable("halloween-citations", True)
-                person_result = run(manager, "halloween-citations", "create-person", {"display_name": "Worker Ghost"})
+                self.assertFalse(run(manager, "citations", "dashboard", {})["ok"])
+                manager.trust("citations", allow_storage=True, allow_managed_data=True)
+                manager.enable("citations", True)
+                person_result = run(manager, "citations", "create-person", {"display_name": "Worker Ghost"})
                 self.assertTrue(person_result["ok"], person_result)
                 person = person_result["result"]["record"]
-                citation_result = run(manager, "halloween-citations", "issue",
+                citation_result = run(manager, "citations", "issue",
                                       {"person_id": person["id"], "violation": "no-costume", "issued_at": "2026-10-01T00:00:00Z"})
                 self.assertTrue(citation_result["ok"], citation_result)
                 citation = citation_result["result"]["record"]
                 restarted = Manager()
-                self.assertEqual(run(restarted, "halloween-citations", "get", {"citation": citation["id"]})["result"]["record"], citation)
+                self.assertEqual(run(restarted, "citations", "get", {"citation": citation["id"]})["result"]["record"], citation)
                 cli = subprocess.run([
-                    sys.executable, "-m", "hosaka.extensions", "run", "halloween-citations", "get",
+                    sys.executable, "-m", "hosaka.extensions", "run", "citations", "get",
                     "--params", json.dumps({"citation": citation["citation_number"]}), "--json",
                 ], check=True, capture_output=True, text=True, timeout=20)
                 self.assertEqual(json.loads(cli.stdout)["result"]["record"]["id"], citation["id"])
@@ -660,11 +660,11 @@ class HostIntegrationTests(unittest.TestCase):
                 with contextlib.redirect_stdout(output):
                     current = Path(directory)
                     outcome = main_console._dispatch_command(
-                        "/extensions run halloween-citations overdue --params '{}'", current, "llm",
+                        "/extensions run citations overdue --params '{}'", current, "llm",
                     )
                 self.assertEqual(outcome, (current, "llm"))
                 self.assertEqual(len(json.loads(output.getvalue())["result"]["rows"]), 1)
-                invalid = run(restarted, "halloween-citations", "resolve", {"citation": citation["id"], "expected_revision": 0})
+                invalid = run(restarted, "citations", "resolve", {"citation": citation["id"], "expected_revision": 0})
                 self.assertFalse(invalid["ok"])
                 self.assertEqual(invalid["error"]["code"], "action_failed")
 
@@ -674,25 +674,25 @@ class HostIntegrationTests(unittest.TestCase):
                 with TestClient(app, base_url="http://127.0.0.1", client=("127.0.0.1", 12345)) as client:
                     catalog = client.get("/api/v1/extensions")
                     self.assertEqual(catalog.status_code, 200, catalog.text)
-                    self.assertIn("halloween-citations", [row["id"] for row in catalog.json()["extensions"]])
-                    view = client.get("/api/v1/extensions/halloween-citations/view").json()
-                    result = client.post("/api/v1/extensions/halloween-citations/actions/overdue", json={
+                    self.assertIn("citations", [row["id"] for row in catalog.json()["extensions"]])
+                    view = client.get("/api/v1/extensions/citations/view").json()
+                    result = client.post("/api/v1/extensions/citations/actions/overdue", json={
                         "invocation_id": str(UUID(int=1)), "digest": view["digest"], "params": {},
                     })
                     self.assertEqual(result.status_code, 200, result.text)
                     self.assertEqual(len(result.json()["result"]["rows"]), 1)
 
-                path = Path(directory) / "extension-data/halloween-citations/citations.sqlite3"
+                path = Path(directory) / "extension-data/citations/citations.db"
                 original = path.read_bytes()
-                manager.enable("halloween-citations", False)
-                manager.remove("halloween-citations")
+                manager.enable("citations", False)
+                manager.remove("citations")
                 self.assertEqual(path.read_bytes(), original)
                 manager.link(ROOT)
-                self.assertFalse(manager.info("halloween-citations")["enabled"])
-                manager.enable("halloween-citations", True)
-                self.assertTrue(run(manager, "halloween-citations", "dashboard", {})["ok"])
+                self.assertFalse(manager.info("citations")["enabled"])
+                manager.enable("citations", True)
+                self.assertTrue(run(manager, "citations", "dashboard", {})["ok"])
                 self.assertEqual(path.read_bytes(), original)
-                logs = (Path(directory) / "logs/extensions/halloween-citations.jsonl").read_text()
+                logs = (Path(directory) / "logs/extensions/citations.jsonl").read_text()
                 self.assertNotIn("Worker Ghost", logs)
                 self.assertEqual(path.stat().st_mode & 0o777, 0o600)
         self.assertEqual(native.lock.read_bytes() if native.lock.exists() else None, native_registry)
